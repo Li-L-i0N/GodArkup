@@ -1,0 +1,15 @@
+[gd_scene load_steps=2 format=3 uid="uid://0j5jylqyoud"]
+
+[ext_resource type="Theme" uid="uid://624wc8i0vgmy" path="res://assets/theme.tres" id="1_dg07o"]
+
+[node name="VBoxContainer" type="VBoxContainer"]
+
+[node name="HealthBar" type="ProgressBar" parent="."]
+custom_minimum_size = Vector2(60, 0)
+layout_mode = 2
+size_flags_vertical = 3
+theme = ExtResource("1_dg07o")
+
+[node name="Label" type="Label" parent="."]
+layout_mode = 2
+theme = ExtResource("1_dg07o")

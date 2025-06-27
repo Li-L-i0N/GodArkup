@@ -1,0 +1,23 @@
+<Resources>
+  <ImageTexture id="icon" path="res://assets/icon.svg" />
+  <Theme id="app_theme" path="res://assets/theme.tres" />
+  <Font id="custom_font" path="res://assets/font.tres" />
+</Resources>
+
+<Panel size_flags_vertical="3" theme="app_theme">
+  <VBoxContainer>
+	<Label text="Welcome to the UI!" theme="app_theme" />
+	<HBoxContainer>
+	  <TextureRect texture="icon" stretch_mode="2" />
+	  <VBoxContainer>
+		<Button text="Accept" on_pressed="handle_accept" />
+		<Button text="Cancel" on_pressed="handle_cancel" />
+	  </VBoxContainer>
+	</HBoxContainer>
+	<LineEdit text="Type here..." />
+	<ProgressBar value="42" max_value="100" />
+	<ColorRect color="#ff0000" custom_minimum_size="0;40" />
+	<RichTextLabel text="Welcome!" size_flags_vertical="3" custom_minimum_size="0;60" />
+	<Button text="OK" size_flags_vertical="1" />
+  </VBoxContainer>
+</Panel>

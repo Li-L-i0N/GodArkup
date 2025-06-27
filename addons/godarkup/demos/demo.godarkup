@@ -1,0 +1,9 @@
+<Resources>
+  <ImageTexture id="icon" path="res://assets/icon.svg"/>
+  <Theme id="app_theme" path="res://assets/theme.tres"/>
+</Resources>
+
+<VBoxContainer>
+  <TextureRect texture="icon"/>
+  <Button theme="app_theme" text="Click" on_pressed="handle_click"/>
+</VBoxContainer>

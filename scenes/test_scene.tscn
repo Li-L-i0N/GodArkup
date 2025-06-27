@@ -1,0 +1,16 @@
+[gd_scene load_steps=4 format=3 uid="uid://clbrb8vepmqx0"]
+
+[ext_resource type="Script" uid="uid://be8jf0v1fd8wm" path="res://scenes/test_scene.gd" id="1_1ecnm"]
+[ext_resource type="Script" uid="uid://bko6l7nj83n7r" path="res://addons/godarkup/scripts/player_script.gd" id="2_j8ivh"]
+[ext_resource type="Texture2D" uid="uid://8q2f1p5krw0q" path="res://assets/player.svg" id="3_nd71p"]
+
+[node name="TestScene" type="Node2D"]
+script = ExtResource("1_1ecnm")
+
+[node name="player" type="Node2D" parent="."]
+position = Vector2(597, 262)
+script = ExtResource("2_j8ivh")
+
+[node name="Sprite2D" type="Sprite2D" parent="player"]
+scale = Vector2(2.775, 2.755)
+texture = ExtResource("3_nd71p")

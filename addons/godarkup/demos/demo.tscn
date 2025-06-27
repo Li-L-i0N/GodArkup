@@ -1,0 +1,15 @@
+[gd_scene load_steps=3 format=3 uid="uid://bkc781gncsgj6"]
+
+[ext_resource type="Texture2D" uid="uid://dknui34nlanut" path="res://assets/icon.svg" id="1_1diux"]
+[ext_resource type="Theme" uid="uid://624wc8i0vgmy" path="res://assets/theme.tres" id="2_6w62l"]
+
+[node name="VBoxContainer" type="VBoxContainer"]
+
+[node name="TextureRect" type="TextureRect" parent="."]
+layout_mode = 2
+texture = ExtResource("1_1diux")
+
+[node name="Button" type="Button" parent="."]
+layout_mode = 2
+theme = ExtResource("2_6w62l")
+text = "Click"

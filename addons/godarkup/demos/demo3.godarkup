@@ -1,0 +1,17 @@
+<Resources>
+  <Theme id="main_theme" path="res://assets/theme.tres"/>
+</Resources>
+
+<VBoxContainer>
+  <!-- Bind the ProgressBar’s “value” to whatever parameter is emitted by the player’s “health_changed” signal -->
+  <ProgressBar name="HealthBar"
+				min="0"
+				max_value="{player1.max_health}"
+				value="{player1.health:health_changed}"
+				theme="main_theme"
+				custom_minimum_size="60;0"
+				size_flags_vertical="3"/>
+
+  <!-- You can do the same for any other signal -->
+  <Label text="{player1.ammo:ammo_updated}" theme="main_theme"/>
+</VBoxContainer>
