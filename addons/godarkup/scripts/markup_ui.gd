@@ -128,12 +128,50 @@ func _build_node(parser: XMLParser, signal_target: Object) -> Node:
 					Use '.' for properties or ':' for signals.""" % expr)
 		elif name.begins_with("on_"):
 			var sig := name.substr(3)
-			if node.has_signal(sig):
-				var call := Callable(signal_target, parser.get_attribute_value(i))
-				if not node.is_connected(sig, call):
-					node.connect(sig, call)
+			if not node.has_signal(sig):
+				push_warning("[GodArkup] Node '%s' has no signal '%s'" % [tag, sig])
+				continue
+
+			var handler_str := parser.get_attribute_value(i)
+			if "." not in handler_str:
+				push_warning("[GodArkup] Invalid handler format '%s', expected node_external_id.handler_name" % handler_str)
+				continue
+
+			var parts := handler_str.split(".")
+			if parts.size() != 2:
+				push_warning("[GodArkup] Invalid handler format '%s', expected node_external_id.handler_name" % handler_str)
+				continue
+
+			var target_ref := parts[0]
+			var method_name := parts[1]
+			var handler_target: Object = null
+
+			match target_ref:
+				"self":
+					handler_target = node
+				"owner":
+					handler_target = signal_target
+				_:
+					# Search in the scene for a node with matching external id
+					var scene_root = signal_target.get_tree().get_current_scene()
+					if not scene_root:
+						continue
+					handler_target = _find_by_external_id(scene_root, external_id_property, target_ref)
+
+			if not handler_target:
+				if not Engine.is_editor_hint():
+					push_warning("[GodArkup] Cannot find handler: %s.%s" % [target_ref])
+				continue
+			if not handler_target.has_method(method_name):
+				if not Engine.is_editor_hint():
+					push_warning("[GodArkup] Cannot find method: %s" % [method_name])
+				continue
+			var call := Callable(handler_target, method_name)
+			if not node.is_connected(sig, call):
+				node.connect(sig, call)
 		else:
 			var parsed = _parse_value(val)
+			# If it names a resource by id, force it
 			if parsed is String and resource_map.has(parsed):
 				parsed = resource_map[parsed]
 			if node.has_method("set"):
@@ -181,11 +219,19 @@ func _apply_bindings(bindings: Array) -> void:
 
 		# 1) Find the source node by ExternalIdUiMarkup
 		var src: Node = null
-		# Use current scene root for search
-		var scene_root = b.target.get_tree().get_current_scene()
-		if not scene_root:
-			continue
-		src = _find_by_external_id(scene_root, external_id_property, b.source)
+		
+		match b.source:
+			"self":
+				src = b.node
+			"owner":
+				src = b.target
+			_:
+				# Search in the scene for a node with matching external id
+				var scene_root = b.target.get_tree().get_current_scene()
+				if not scene_root:
+					push_warning("[GodArkup] Trouble finding scene root. Maybe target %s is not valid", b.target)
+					continue
+				src = _find_by_external_id(scene_root, external_id_property, b.source)
 
 		if not src:
 			push_warning("[GodArkup] Binding source '%s' not found via property '%s'" % [b.source, external_id_property])
@@ -201,7 +247,7 @@ func _apply_bindings(bindings: Array) -> void:
 
 		# Connect its signal to update the UI property
 		if not src.has_signal(b.signal):
-			push_warning("Source '%s' has no signal '%s'" % [b.target, b.signal])
+			push_warning("[GodArkup] Source '%s' has no signal '%s'" % [b.target, b.signal])
 			continue
 
 		var callable_lambda := func (val, prop): b.node.set(prop, val)
