@@ -1,0 +1,16 @@
+[gd_scene load_steps=2 format=3 uid="uid://bjsabi2lo5p5x"]
+
+[ext_resource type="Script" uid="uid://pv3moilst1m8" path="res://addons/godarkup/scenes/inventory_slot.gd" id="1_mc08f"]
+
+[node name="InventorySlot" type="HBoxContainer"]
+offset_right = 40.0
+offset_bottom = 40.0
+size_flags_horizontal = 3
+script = ExtResource("1_mc08f")
+label_text = null
+
+[node name="Label" type="Label" parent="."]
+layout_mode = 2
+
+[node name="TextureRect" type="TextureRect" parent="."]
+layout_mode = 2

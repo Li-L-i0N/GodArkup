@@ -1,0 +1,27 @@
+<!-- inventory_ui.godarkup -->
+<Resources>
+  <!-- Pre‑load a texture we’ll use on every slot -->
+  <ImageTexture id="slot_icon" path="res://assets/inventory_slot.png" />
+</Resources>
+
+<!-- Root panel -->
+<Panel size_flags_vertical="3" custom_minimum_size="300;0">
+
+  <!-- Title label -->
+  <Label text="Inventory" custom_minimum_size="0;24" />
+
+  <!-- Dynamic bar of inventory slots                         -->
+  <!--  • Loops `player.max_slots` times                      -->
+  <!--  • Provides loop index through `var="i"`               -->
+  <!--  • Each iteration instances InventorySlot.tscn         -->
+  <!--  • Passes exported props: index, icon, label_text      -->
+  <for count="{player1.max_slots}" var="i">
+ 	<Label text="#{i}" custom_minimum_size="0;12" />
+	<Node
+	  path="res://addons/godarkup/scenes/InventorySlot.tscn"
+	  index="#{i}"                         <!-- pure binding -->
+	  icon="slot_icon"                    <!-- resource id -->
+	  label_text="Slot #{i + 1}" />       <!-- interpolation -->
+  </for>
+
+</Panel>

@@ -21,7 +21,7 @@ project/assembly_name="godot-markup"
 
 [editor_plugins]
 
-enabled=PackedStringArray("res://addons/godarkup/plugin.cfg", "res://addons/markup_ui/plugin.cfg")
+enabled=PackedStringArray("res://addons/godarkup/plugin.cfg")
 
 [input]
 

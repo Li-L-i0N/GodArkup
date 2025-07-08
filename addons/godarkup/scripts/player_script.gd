@@ -7,6 +7,8 @@ class_name Player
 signal health_changed(new_health: float)
 signal ammo_updated(count: int)
 
+var max_slots := 5
+
 var max_health := 350.0
 var health := 275.0:
 	set(value): 

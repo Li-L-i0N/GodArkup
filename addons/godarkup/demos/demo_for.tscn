@@ -1,0 +1,10 @@
+[gd_scene format=3 uid="uid://dfaudb3q0ww6k"]
+
+[node name="Panel" type="Panel"]
+custom_minimum_size = Vector2(300, 0)
+size_flags_vertical = 3
+
+[node name="Label" type="Label" parent="."]
+custom_minimum_size = Vector2(0, 24)
+layout_mode = 0
+text = "Inventory"
