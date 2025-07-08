@@ -8,3 +8,6 @@ size_flags_vertical = 3
 custom_minimum_size = Vector2(0, 24)
 layout_mode = 0
 text = "Inventory"
+
+[node name="ForLoop" type="VBoxContainer" parent="."]
+layout_mode = 0

@@ -238,16 +238,20 @@ func _build_for(parser: XMLParser, signal_target: Object, var_context: Dictionar
 
 	_apply_bindings(bindings)
 
-	# 2) Build the *template* structure once
+	# 2) Build the *template* structure by saving the offsets of DIRECT children.
 	var template_offsets = []
 	while parser.read() == OK:
 		var node_type = parser.get_node_type()
 		if node_type == XMLParser.NODE_ELEMENT_END and parser.get_node_name() == "for":
 			break
 		if node_type == XMLParser.NODE_ELEMENT:
+			# This is a direct child. Store its offset.
 			template_offsets.append(parser.get_node_offset())
+			# CRITICAL: Skip the entire section for this child to avoid parsing its descendants.
+			# This makes the template-gathering non-recursive.
+			parser.skip_section()
 
-	# 3) Now replay template and fill per loop iteration
+	# 3) Now, replay the template for each loop iteration.
 	for i in range(count_val):
 		var local_ctx = var_context.duplicate()
 		local_ctx[idx_name] = i
@@ -255,9 +259,11 @@ func _build_for(parser: XMLParser, signal_target: Object, var_context: Dictionar
 		for offset in template_offsets:
 			var subparser = XMLParser.new()
 			subparser.open_buffer(buffer)
-			subparser.seek(offset)
+			subparser.seek(offset) # This moves to the offset AND reads the node there.
 			
-			if subparser.read() == OK and subparser.get_node_type() == XMLParser.NODE_ELEMENT:
+			# We are now positioned on the node we want to build.
+			# DO NOT call read() again here, as that would skip the node.
+			if subparser.get_node_type() == XMLParser.NODE_ELEMENT:
 				var child = _build_node(subparser, signal_target, local_ctx, buffer)
 				if child:
 					container.add_child(child)

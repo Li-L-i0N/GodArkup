@@ -1,0 +1,12 @@
+<VBoxContainer>
+	<Label text="Nested Loop Demo" horizontal_alignment="1" />
+	<Panel custom_minimum_size="0;10" />
+	<for count="5" var="i">
+		<HBoxContainer>
+			<Label text="Outer Index: #{i}" custom_minimum_size="140;0" />
+			<for count="3" var="j">
+				<Button text="Btn: #{i}-#{j}" />
+			</for>
+		</HBoxContainer>
+	</for>
+</VBoxContainer>
