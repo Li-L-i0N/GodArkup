@@ -1,0 +1,34 @@
+[gd_scene format=3 uid="uid://dynl8irafh1br"]
+
+[node name="VBoxContainer" type="VBoxContainer"]
+
+[node name="Label" type="Label" parent="."]
+layout_mode = 2
+text = "Recursive Markup Demo"
+horizontal_alignment = 1
+
+[node name="Panel" type="Panel" parent="."]
+custom_minimum_size = Vector2(0, 10)
+layout_mode = 2
+
+[node name="@Label@81435" type="Label" parent="."]
+layout_mode = 2
+text = "These buttons are loaded from another markup file:"
+
+[node name="HBoxContainer" type="HBoxContainer" parent="."]
+layout_mode = 2
+
+[node name="Button" type="Button" parent="HBoxContainer"]
+custom_minimum_size = Vector2(120, 30)
+layout_mode = 2
+text = "First Button"
+
+[node name="@Button@81436" type="Button" parent="HBoxContainer"]
+custom_minimum_size = Vector2(120, 30)
+layout_mode = 2
+text = "Second Button"
+
+[node name="@Button@81437" type="Button" parent="HBoxContainer"]
+custom_minimum_size = Vector2(120, 30)
+layout_mode = 2
+text = "Third One"

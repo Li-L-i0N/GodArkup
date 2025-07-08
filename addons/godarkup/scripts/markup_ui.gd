@@ -17,7 +17,7 @@ func _init():
 
 
 # Entry point: load markup, parse resources, then build UI
-func load_markup(path: String, signal_target: Object) -> Control:
+func load_markup(path: String, signal_target: Object, _parsed_files: Array = []) -> Control:
 	logger.info("Starting GodArkup processing for: %s" % path)
 	resource_map.clear()
 
@@ -113,12 +113,11 @@ func _parse_resources(parser: XMLParser) -> void:
 
 
 # Recursive builder with <Node> and <for> support
-func _build_node(parser: XMLParser, signal_target: Object, var_context: Dictionary, buffer: PackedByteArray) -> Control:
+func _build_node(parser: XMLParser, signal_target: Object, var_context: Dictionary, buffer: PackedByteArray, _parsed_files: Array = []) -> Control:
 	var tag = parser.get_node_name()
 
 	# 0) Explicitly ignore <Resources> tag during node building phase
 	if tag == "Resources":
-		# It's not a node, just a container. Skip its contents.
 		if not parser.is_empty():
 			while parser.read() == OK:
 				if parser.get_node_type() == XMLParser.NODE_ELEMENT_END and parser.get_node_name() == "Resources":
@@ -127,11 +126,10 @@ func _build_node(parser: XMLParser, signal_target: Object, var_context: Dictiona
 
 	# 1) <for count="..." var="idx">
 	if tag == "for":
-		return _build_for(parser, signal_target, var_context, buffer)
+		return _build_for(parser, signal_target, var_context, buffer, _parsed_files)
 
 	# 2) <Node path="..."> instancing
 	if tag == "Node":
-		# 1) Grab the required path
 		var scene_path := ""
 		for i in range(parser.get_attribute_count()):
 			if parser.get_attribute_name(i) == "path":
@@ -141,14 +139,32 @@ func _build_node(parser: XMLParser, signal_target: Object, var_context: Dictiona
 			logger.error("[GodArkup] <Node> missing 'path' attribute")
 			return null
 
-		# 2) Load and instance
-		var packed := ResourceLoader.load(scene_path)
-		if not packed or not packed is PackedScene:
-			logger.error("[GodArkup] Could not load scene: %s" % scene_path)
-			return null
-		var inst = packed.instantiate()
+		var inst: Node
+		# --- RECURSIVE MARKUP PARSING ---
+		if scene_path.ends_with(".godarkup"):
+			# Infinite recursion guard
+			if scene_path in _parsed_files:
+				logger.error("[GodArkup] Infinite recursion detected. Aborting parse of '%s'." % scene_path)
+				return null
+			
+			var new_parsed_files = _parsed_files.duplicate()
+			new_parsed_files.append(scene_path)
+			
+			# Recursively call load_markup.
+			# Note: We create a new GodArkup instance to keep resource maps separate.
+			inst = GodArkup.new().load_markup(scene_path, signal_target, new_parsed_files)
+			if not inst:
+				logger.error("[GodArkup] Failed to load markup from sub-file: %s" % scene_path)
+				return null
+		# --- STANDARD .tscn INSTANCING ---
+		else:
+			var packed := ResourceLoader.load(scene_path)
+			if not packed or not packed is PackedScene:
+				logger.error("[GodArkup] Could not load scene: %s" % scene_path)
+				return null
+			inst = packed.instantiate()
 
-		# 3) Process remaining attributes using the common helper
+		# Process remaining attributes on the <Node> tag for the new instance
 		var bindings := []
 		for i in range(parser.get_attribute_count()):
 			var an := parser.get_attribute_name(i)
@@ -157,10 +173,9 @@ func _build_node(parser: XMLParser, signal_target: Object, var_context: Dictiona
 				continue
 			_process_attr(inst, an, av, signal_target, var_context, bindings)
 
-		# 4) Apply any property/signal bindings collected above
 		_apply_bindings(bindings)
 
-		# 5) Skip inner subtree (if someone wrote <Node ...>...</Node>)
+		# Skip inner subtree of the <Node> tag
 		if not parser.is_empty():
 			while parser.read() == OK:
 				if parser.get_node_type() == XMLParser.NODE_ELEMENT_END and parser.get_node_name() == "Node":
@@ -168,7 +183,7 @@ func _build_node(parser: XMLParser, signal_target: Object, var_context: Dictiona
 		return inst
 
 	# 3) Fallback to standard nodes
-	return _build_standard_node(parser, signal_target, var_context, buffer)
+	return _build_standard_node(parser, signal_target, var_context, buffer, _parsed_files)
 
 # Resolve the initial value of a binding expression, e.g. "{player.score}"
 func _resolve_binding_value(expr_str: String, signal_target: Object) -> Variant:
@@ -207,7 +222,7 @@ func _resolve_binding_value(expr_str: String, signal_target: Object) -> Variant:
 
 
 # Loop builder: <for count="..." var="idx">
-func _build_for(parser: XMLParser, signal_target: Object, var_context: Dictionary, buffer: PackedByteArray) -> Control:
+func _build_for(parser: XMLParser, signal_target: Object, var_context: Dictionary, buffer: PackedByteArray, _parsed_files: Array) -> Control:
 	var container = VBoxContainer.new()
 	container.name = "ForLoop"
 
@@ -264,7 +279,7 @@ func _build_for(parser: XMLParser, signal_target: Object, var_context: Dictionar
 			# We are now positioned on the node we want to build.
 			# DO NOT call read() again here, as that would skip the node.
 			if subparser.get_node_type() == XMLParser.NODE_ELEMENT:
-				var child = _build_node(subparser, signal_target, local_ctx, buffer)
+				var child = _build_node(subparser, signal_target, local_ctx, buffer, _parsed_files)
 				if child:
 					container.add_child(child)
 
@@ -273,7 +288,7 @@ func _build_for(parser: XMLParser, signal_target: Object, var_context: Dictionar
 
 
 # Original node creation logic
-func _build_standard_node(parser: XMLParser, signal_target: Object, var_context: Dictionary, buffer: PackedByteArray) -> Control:
+func _build_standard_node(parser: XMLParser, signal_target: Object, var_context: Dictionary, buffer: PackedByteArray, _parsed_files: Array) -> Control:
 	var tag := parser.get_node_name()
 	var node := ClassDB.instantiate(tag)
 	if node == null:
@@ -304,7 +319,7 @@ func _build_standard_node(parser: XMLParser, signal_target: Object, var_context:
 	while parser.read() == OK:
 		match parser.get_node_type():
 			XMLParser.NODE_ELEMENT:
-				var child := _build_node(parser, signal_target, var_context, buffer)
+				var child := _build_node(parser, signal_target, var_context, buffer, _parsed_files)
 				if child:
 					node.add_child(child)
 			XMLParser.NODE_ELEMENT_END:
