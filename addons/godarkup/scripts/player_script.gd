@@ -2,7 +2,7 @@ extends Node
 class_name Player
 
 # Example script of what this is what the UI will match against
-@export var ExternalIdUiMarkup := "player1"
+@export var ExternalIdUiMarkup: String = ""
 
 signal health_changed(new_health: float)
 signal ammo_updated(count: int)

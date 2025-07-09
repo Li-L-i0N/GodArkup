@@ -6,6 +6,8 @@ class_name GodArkup
 # Now supports <Node path="..."> instancing and <for count="..." var="idx"> loops.
 
 var resource_map: Dictionary = {}
+var property_definitions: Dictionary = {}
+var resolved_properties: Dictionary = {}
 var external_id_property := "ExternalIdUiMarkup"
 var logger: Logger
 
@@ -17,9 +19,11 @@ func _init():
 
 
 # Entry point: load markup, parse resources, then build UI
-func load_markup(path: String, signal_target: Object, _parsed_files: Array = []) -> Control:
+func load_markup(path: String, signal_target: Object, _parsed_files: Array = [], passed_properties: Dictionary = {}) -> Control:
 	logger.info("Starting GodArkup processing for: %s" % path)
 	resource_map.clear()
+	property_definitions.clear()
+	resolved_properties.clear()
 
 	var file = FileAccess.open(path, FileAccess.READ)
 	if not FileAccess.file_exists(path) or file == null:
@@ -38,7 +42,7 @@ func load_markup(path: String, signal_target: Object, _parsed_files: Array = [])
 		logger.error("[GodArkup] Failed to parse buffer from: %s" % path)
 		return null
 
-	# First pass: Config overrides
+	# --- CONFIG OVERRIDE PASS ---
 	var parser_config := XMLParser.new()
 	if parser_config.open_buffer(buffer) == OK:
 		while parser_config.read() == OK:
@@ -52,31 +56,51 @@ func load_markup(path: String, signal_target: Object, _parsed_files: Array = [])
 						break
 				break
 
-	# --- CORRECTED PARSING LOGIC (ACCOUNTING FOR SEEK BEHAVIOR) ---
+	# --- SEQUENTIAL PARSING LOGIC ---
 	parser.seek(0) # This moves to the start AND reads the first node.
 
-	# Phase 1: Skip any initial non-element nodes. The first read() was done by seek().
-	# We loop in case there are multiple text/comment nodes at the start.
-	while parser.get_node_type() != XMLParser.NODE_ELEMENT:
-		if parser.read() != OK:
-			logger.error("[GodArkup] No UI root element found in %s" % path)
-			return null # Reached end of file without finding any elements.
+	# Helper to advance the parser to the next significant element node.
+	# It checks the CURRENT node first before trying to read.
+	var advance_to_next_element = func(p: XMLParser) -> bool:
+		if p.get_node_type() == XMLParser.NODE_ELEMENT:
+			return true
+		while p.read() == OK:
+			if p.get_node_type() == XMLParser.NODE_ELEMENT:
+				return true
+		return false
 
-	# Phase 2: Process the first element we found.
+	# Phase 1: Find the first element in the file.
+	if not advance_to_next_element.call(parser):
+		logger.error("[GodArkup] No elements found in file: %s" % path)
+		return null
+
+	# Phase 2: Check if the first element is <Properties>.
+	if parser.get_node_name() == "Properties":
+		_parse_properties(parser)
+		if not advance_to_next_element.call(parser):
+			logger.error("[GodArkup] No UI root element found after <Properties> in %s" % path)
+			return null
+
+	# Phase 3: Check if the current element is <Resources>.
+	if parser.get_node_name() == "Resources":
+		_parse_resources(parser)
+		if not advance_to_next_element.call(parser):
+			logger.error("[GodArkup] No UI root element found after <Resources> in %s" % path)
+			return null
+
+	# Phase 4: Resolve passed properties against definitions.
+	for prop_name in property_definitions:
+		var prop_def = property_definitions[prop_name]
+		if passed_properties.has(prop_name):
+			resolved_properties[prop_name] = passed_properties[prop_name]
+		else:
+			resolved_properties[prop_name] = prop_def["default"]
+
+	# Phase 5: The current element must be the root. Build the UI tree.
 	var root_node = null
 	if parser.get_node_type() == XMLParser.NODE_ELEMENT:
-		if parser.get_node_name() == "Resources":
-			_parse_resources(parser)
-
-			# Now, find the *next* element, which must be the root.
-			while parser.read() == OK:
-				if parser.get_node_type() == XMLParser.NODE_ELEMENT:
-					root_node = _build_node(parser, signal_target, {}, buffer)
-					break # Found and built the root.
-		else:
-			# The first element was not <Resources>, so it must be the root.
-			root_node = _build_node(parser, signal_target, {}, buffer)
-
+		root_node = _build_node(parser, signal_target, resolved_properties, buffer, _parsed_files)
+	
 	if root_node:
 		logger.info("Successfully built UI from %s" % path)
 	else:
@@ -110,6 +134,36 @@ func _parse_resources(parser: XMLParser) -> void:
 			logger.info("Finished parsing resources.")
 			return
 
+# Parse <Properties>
+func _parse_properties(parser: XMLParser) -> void:
+	logger.info("Parsing properties...")
+	while parser.read() == OK:
+		var t := parser.get_node_type()
+		if t == XMLParser.NODE_ELEMENT and parser.get_node_name() == "Property":
+			var prop_name = ""
+			var prop_type = "String" # Default type
+			var prop_default = ""
+			for i in range(parser.get_attribute_count()):
+				var aname = parser.get_attribute_name(i)
+				var avalue = parser.get_attribute_value(i)
+				if aname == "name": prop_name = avalue
+				elif aname == "type": prop_type = avalue
+				elif aname == "default": prop_default = avalue
+			
+			if prop_name:
+				property_definitions[prop_name] = {
+					"type": prop_type,
+					"default": _parse_value(prop_default)
+				}
+				logger.info("Defined property '%s' (type: %s, default: %s)" % [prop_name, prop_type, prop_default])
+			else:
+				logger.warning("[GodArkup] Found <Property> tag with no 'name' attribute.")
+
+		elif t == XMLParser.NODE_ELEMENT_END and parser.get_node_name() == "Properties":
+			logger.info("Finished parsing properties.")
+			return
+
+
 
 
 # Recursive builder with <Node> and <for> support
@@ -139,7 +193,7 @@ func _build_node(parser: XMLParser, signal_target: Object, var_context: Dictiona
 			logger.error("[GodArkup] <Node> missing 'path' attribute")
 			return null
 
-		var inst: Node
+		var inst: Control
 		# --- RECURSIVE MARKUP PARSING ---
 		if scene_path.ends_with(".godarkup"):
 			# Infinite recursion guard
@@ -150,9 +204,16 @@ func _build_node(parser: XMLParser, signal_target: Object, var_context: Dictiona
 			var new_parsed_files = _parsed_files.duplicate()
 			new_parsed_files.append(scene_path)
 			
+			# Collect attributes from the <Node> tag to pass them as properties.
+			var passed_props = {}
+			for i in range(parser.get_attribute_count()):
+				var an = parser.get_attribute_name(i)
+				if an == "path": continue
+				var av = parser.get_attribute_value(i)
+				passed_props[an] = _parse_value(_interpolate(av, var_context))
+
 			# Recursively call load_markup.
-			# Note: We create a new GodArkup instance to keep resource maps separate.
-			inst = GodArkup.new().load_markup(scene_path, signal_target, new_parsed_files)
+			inst = GodArkup.new().load_markup(scene_path, signal_target, new_parsed_files, passed_props)
 			if not inst:
 				logger.error("[GodArkup] Failed to load markup from sub-file: %s" % scene_path)
 				return null
@@ -164,16 +225,18 @@ func _build_node(parser: XMLParser, signal_target: Object, var_context: Dictiona
 				return null
 			inst = packed.instantiate()
 
-		# Process remaining attributes on the <Node> tag for the new instance
-		var bindings := []
-		for i in range(parser.get_attribute_count()):
-			var an := parser.get_attribute_name(i)
-			var av := parser.get_attribute_value(i)
-			if an == "path":
-				continue
-			_process_attr(inst, an, av, signal_target, var_context, bindings)
-
-		_apply_bindings(bindings)
+		# Process remaining attributes on the <Node> tag.
+		# For .godarkup files, this is handled by the property system.
+		# For .tscn files, we process them as standard attributes.
+		if not scene_path.ends_with(".godarkup"):
+			var bindings := []
+			for i in range(parser.get_attribute_count()):
+				var an := parser.get_attribute_name(i)
+				var av := parser.get_attribute_value(i)
+				if an == "path":
+					continue
+				_process_attr(inst, an, av, signal_target, var_context, bindings)
+			_apply_bindings(bindings)
 
 		# Skip inner subtree of the <Node> tag
 		if not parser.is_empty():
@@ -328,43 +391,41 @@ func _build_standard_node(parser: XMLParser, signal_target: Object, var_context:
 	return node
 
 func _interpolate(text: String, var_context: Dictionary) -> String:
-	# No variables 
-	if var_context.is_empty():
+	# Combine resolved component properties with local loop variables.
+	# Loop variables take precedence over component properties in case of a name collision.
+	var full_context = resolved_properties.duplicate()
+	full_context.merge(var_context, true)
+	full_context.merge(resource_map, false)
+
+	if full_context.is_empty() or text.find("#{") == -1:
 		return text
 
 	var result := text
 	var regex := RegEx.new()
-	regex.compile("#\\{([^}]+)\\}")
+	regex.compile("#\\{(.+?)\\}")
 
 	for m in regex.search_all(text):
-		var code = m.get_string(1)			# expression inside #{ ... }
+		var code = m.get_string(1).strip_edges()
 		var expr := Expression.new()
 
-		# 1) Get variable names *and keep their order* in an Array
 		var var_names := []
 		var var_values := []
-		for key in var_context.keys():
+		for key in full_context:
 			var_names.append(str(key))
-			var_values.append(var_context[key])
-		
-		# 2) Tell the parser which identifiers are legal
+			var_values.append(full_context[key])
+
 		if expr.parse(code, var_names) != OK:
 			if not Engine.is_editor_hint():
-				logger.warning("[GodArkup] Couldn't parse expression '%s'" % code)
-			continue						# skip on parse error
+				logger.warning("[GodArkup] Couldn't parse expression '%s'. Error: %s" % [code, expr.get_error_text()])
+			continue
 			
-		# 3) Build an Array of values in the SAME order
-		for n in var_names:
-			var_values.append(var_context[n])
-
-		# 4) Evaluate the expression
 		var val = expr.execute(var_values)
 		if expr.has_execute_failed():
-			logger.error("[GodArkup] Expression execution failed for: %s." % code)
+			logger.error("[GodArkup] Expression execution failed for: '%s'. Error: %s" % [code, expr.get_error_text()])
 
-		# 5) Replace the whole #{ ... } token
 		result = result.replace(m.get_string(0), str(val))
 	return result
+
 
 
 # Primitive value parser
@@ -463,13 +524,12 @@ func _create_fake_parser(data: Dictionary) -> XMLParser:
 
 
 func _process_attr(node: Object, name: String, raw_val: String, signal_target: Object, var_ctx: Dictionary, bindings: Array):
-	# 
-	if raw_val.find("#{") != -1 and not var_ctx.is_empty():
-		raw_val = _interpolate(raw_val, var_ctx)
+	var processed_val = raw_val
+	if processed_val.find("#{") != -1:
+		processed_val = _interpolate(processed_val, var_ctx)
 
-	# 
-	if raw_val.begins_with("{") and raw_val.ends_with("}"):
-		var expr := raw_val.substr(1, raw_val.length() - 2)
+	if processed_val.begins_with("{") and processed_val.ends_with("}"):
+		var expr := processed_val.substr(1, processed_val.length() - 2)
 		var parts := expr.split(":")
 		if parts.size() == 2 or parts.size() == 1:
 			var src_prop_pair := parts[0]
@@ -489,17 +549,15 @@ func _process_attr(node: Object, name: String, raw_val: String, signal_target: O
 			logger.warning("[GodArkup] Invalid binding expression format: '%s'" % expr)
 		return
 
-	# 
 	if name.begins_with("on_"):
-		_wire_event(node, name, raw_val, signal_target)
+		_wire_event(node, name, processed_val, signal_target)
 		return
 
-	# 
-	var parsed = _parse_value(raw_val)
+	var parsed = _parse_value(processed_val)
 	if parsed is String and resource_map.has(parsed):
 		parsed = resource_map[parsed]
-	if node.has_method("set"):
-		node.set(name, parsed)
+	
+	node.set(name, parsed)
 
 
 
