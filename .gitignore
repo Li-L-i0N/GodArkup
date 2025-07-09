@@ -15,7 +15,5 @@ export_credentials.cfg
 data_*/
 mono_crash.*.json
 gemini.md
-addons/godarkup/logs/godarkup_latest.log
-addons/godarkup/logs/godarkup_latest.log
 /addons/godarkup/logs
 myNotepad.md

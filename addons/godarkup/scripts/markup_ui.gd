@@ -14,7 +14,13 @@ var logger: Logger
 
 
 func _init():
-	logger = Logger.new()
+	if Engine.is_editor_hint():
+		# In editor, the singleton might not be reliable.
+		# We create a local logger instance to avoid issues.
+		logger = Logger.new()
+	else:
+		# In-game, we use the singleton to aggregate logs.
+		logger = Logger.get_instance()
 
 
 

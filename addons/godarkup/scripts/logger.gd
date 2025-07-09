@@ -5,8 +5,16 @@ class_name Logger
 enum Level { INFO, WARNING, ERROR }
 
 var log_file_path := "res://addons/godarkup/logs/godarkup_latest.log"
+static var _instance = null
+
+# Static function to get the singleton instance.
+static func get_instance():
+	if _instance == null:
+		_instance = Logger.new()
+	return _instance
 
 # On initialization, clear the log file for the new session.
+# This will now only run ONCE when the singleton is first created.
 func _init():
 	var file = FileAccess.open(log_file_path, FileAccess.WRITE)
 	if file:
