@@ -1,12 +1,2 @@
-[2025-07-10 01:30:44] [INFO] Starting GodArkup processing for: res://addons/godarkup/components/PlayerCard.godarkup
-[2025-07-10 01:30:44] [INFO] Parsing properties...
-[2025-07-10 01:30:44] [INFO] Defined property 'player_name' (type: String, default: Default Player)
-[2025-07-10 01:30:44] [INFO] Defined property 'player_icon' (type: Resource, default: res://assets/player.svg)
-[2025-07-10 01:30:44] [INFO] Defined property 'is_active' (type: Bool, default: false)
-[2025-07-10 01:30:44] [INFO] Defined property 'health_value_binding' (type: String, default: {player_static.health:health_changed})
-[2025-07-10 01:30:44] [INFO] Defined property 'health_max_value' (type: Float, default: 100)
-[2025-07-10 01:30:44] [INFO] Finished parsing properties.
-[2025-07-10 01:30:44] [INFO] Parsing resources...
-[2025-07-10 01:30:44] [INFO] Finished parsing resources.
-[2025-07-10 01:30:44] [INFO] Successfully built UI from res://addons/godarkup/components/PlayerCard.godarkup
-[2025-07-10 01:30:44] [INFO] Successfully built UI from res://addons/godarkup/demos/demo_properties.godarkup
+[2025-07-11 21:55:52] [INFO] Starting GodArkup processing for: res://addons/godarkup/demos/demo_inventory.godarkup
+[2025-07-11 21:55:52] [INFO] Successfully built UI from res://addons/godarkup/demos/demo_inventory.godarkup

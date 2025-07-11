@@ -5,6 +5,7 @@ extends EditorPlugin
 
 var current_path: String = ""
 var preview_dock
+var syntax_highlighter: EditorSyntaxHighlighter
 
 func _handles(resource: Object) -> bool:
 	return resource is Resource and resource.resource_path.to_lower().ends_with(".godarkup")
@@ -17,7 +18,7 @@ func _edit(resource: Object) -> void:
 
 	if preview_dock and preview_dock.has_method("preview_markup"):
 		preview_dock.preview_markup(path)
-		
+
  # Set scene ownership so child nodes are saved
 func _set_owner_recursive(node: Node, owner: Node) -> void:
 	for child in node.get_children():
@@ -47,7 +48,7 @@ func _generate_scene(path: String) -> void:
 		printerr('[GodArkup] Failed to save scene to %s' % save_path)
 	else:
 		print('[GodArkup] Scene generated: %s' % save_path)
-		
+
 func _enter_tree() -> void:
 	 # Add "Generate UI Scene" to the Tools menu
 	add_tool_menu_item("Generate UI Scene", Callable(self, "_on_generate_button_pressed"))
@@ -56,7 +57,7 @@ func _enter_tree() -> void:
 	var PreviewScript := preload("res://addons/godarkup/scripts/markup_ui_preview.gd")
 	preview_dock = PreviewScript.new()
 	add_control_to_bottom_panel(preview_dock, "UI Markup Preview")
-
+	
 	# Register .godarkup extension with the editor
 	var editor_settings := get_editor_interface().get_editor_settings()
 	var filters := editor_settings.get_setting("docks/filesystem/textfile_extensions")
@@ -92,4 +93,3 @@ func _on_generate_button_pressed() -> void:
 			_generate_scene(path)
 			return
 	printerr("[GodArkup] No .godarkup file selected in FileSystem.")
-	

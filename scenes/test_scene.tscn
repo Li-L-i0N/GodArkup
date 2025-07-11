@@ -1,9 +1,10 @@
-[gd_scene load_steps=9 format=3 uid="uid://clbrb8vepmqx0"]
+[gd_scene load_steps=10 format=3 uid="uid://clbrb8vepmqx0"]
 
 [ext_resource type="Script" uid="uid://be8jf0v1fd8wm" path="res://scenes/test_scene.gd" id="1_1ecnm"]
 [ext_resource type="Script" uid="uid://bko6l7nj83n7r" path="res://addons/godarkup/scripts/player_script.gd" id="2_j8ivh"]
 [ext_resource type="Texture2D" uid="uid://8q2f1p5krw0q" path="res://assets/player.svg" id="3_nd71p"]
 [ext_resource type="Script" uid="uid://dsps01cn0x3ih" path="res://addons/godarkup/scripts/player_with_health.gd" id="4_7ddre"]
+[ext_resource type="Script" uid="uid://b2jsy6u36reux" path="res://addons/godarkup/scripts/player_with_inventory.gd" id="5_qjeyg"]
 
 [sub_resource type="Gradient" id="Gradient_qjeyg"]
 offsets = PackedFloat32Array(0, 0.308057, 1)
@@ -48,4 +49,13 @@ ExternalIdUiMarkup = "player_static"
 
 [node name="Sprite2D" type="Sprite2D" parent="player3"]
 scale = Vector2(5, 5)
+texture = SubResource("GradientTexture2D_rnaij")
+
+[node name="playerInv" type="Node2D" parent="."]
+position = Vector2(869.225, 440.85)
+script = ExtResource("5_qjeyg")
+ExternalIdUiMarkup = "player_inv"
+
+[node name="Sprite2D" type="Sprite2D" parent="playerInv"]
+scale = Vector2(2, 2)
 texture = SubResource("GradientTexture2D_rnaij")

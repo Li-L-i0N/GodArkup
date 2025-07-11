@@ -2,7 +2,7 @@
 extends RefCounted
 class_name Logger
 
-enum Level { INFO, WARNING, ERROR }
+enum Level { INFO, WARNING, ERROR, DEBUG }
 
 var log_file_path := "res://addons/godarkup/logs/godarkup_latest.log"
 static var _instance = null
@@ -32,6 +32,8 @@ func _log_message(level: Level, message: String):
 			level_str = "WARNING"
 		Level.ERROR:
 			level_str = "ERROR"
+		Level.DEBUG:
+			level_str = "DEBUG"
 
 	var timestamp = Time.get_datetime_string_from_system(false, true)
 	var formatted_message = "[%s] [%s] %s" % [timestamp, level_str, message]
@@ -60,3 +62,6 @@ func warning(message: String):
 
 func error(message: String):
 	_log_message(Level.ERROR, message)
+
+func debug(message: String):
+	_log_message(Level.DEBUG, message)

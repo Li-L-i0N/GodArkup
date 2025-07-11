@@ -1,0 +1,21 @@
+<PanelContainer size_flags_horizontal="3" size_flags_vertical="3">
+	<VBoxContainer margin_left="10" margin_top="10" margin_right="10" margin_bottom="10">
+		<HBoxContainer>
+			<Label text="Inventory Size: " />
+			<Label text="{player_inv.inventory_size:inventory_size_changed}" />
+		</HBoxContainer>
+		<HBoxContainer>
+			<Button text="Add Item" on_pressed="player_inv.add_item" />
+			<Button text="Remove Item" on_pressed="player_inv.remove_item" />
+		</HBoxContainer>
+		<ScrollContainer size_flags_vertical="3">
+			<VBoxContainer name="InventorySlots">
+				<for count="{player_inv.inventory_size:inventory_size_changed}" var="i">
+					<PanelContainer custom_minimum_size="0;50">
+						<Label text="Slot #{i + 1}" align="1" valign="1" />
+					</PanelContainer>
+				</for>
+			</VBoxContainer>
+		</ScrollContainer>
+	</VBoxContainer>
+</PanelContainer>

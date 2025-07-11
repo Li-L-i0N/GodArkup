@@ -25,7 +25,7 @@ func _init():
 
 
 # Entry point: load markup, parse resources, then build UI
-func load_markup(path: String, signal_target: Object, _parsed_files: Array = [], passed_properties: Dictionary = {}) -> Control:
+func load_markup(path: String, signal_target: Node, _parsed_files: Array = [], passed_properties: Dictionary = {}) -> Control:
 	logger.info("Starting GodArkup processing for: %s" % path)
 	resource_map.clear()
 	property_definitions.clear()
@@ -173,7 +173,7 @@ func _parse_properties(parser: XMLParser) -> void:
 
 
 # Recursive builder with <Node> and <for> support
-func _build_node(parser: XMLParser, signal_target: Object, var_context: Dictionary, buffer: PackedByteArray, _parsed_files: Array = []) -> Control:
+func _build_node(parser: XMLParser, signal_target: Node, var_context: Dictionary, buffer: PackedByteArray, _parsed_files: Array = []) -> Control:
 	var tag = parser.get_node_name()
 
 	# 0) Explicitly ignore <Resources> tag during node building phase
@@ -216,7 +216,7 @@ func _build_node(parser: XMLParser, signal_target: Object, var_context: Dictiona
 				var an = parser.get_attribute_name(i)
 				if an == "path": continue
 				var av = parser.get_attribute_value(i)
-				passed_props[an] = _parse_value(_interpolate(av, var_context))
+				passed_props[an] = _parse_value(_interpolate(av, var_context, signal_target))
 
 			# Recursively call load_markup.
 			inst = GodArkup.new().load_markup(scene_path, signal_target, new_parsed_files, passed_props)
@@ -255,7 +255,7 @@ func _build_node(parser: XMLParser, signal_target: Object, var_context: Dictiona
 	return _build_standard_node(parser, signal_target, var_context, buffer, _parsed_files)
 
 # Resolve the initial value of a binding expression, e.g. "{player.score}"
-func _resolve_binding_value(expr_str: String, signal_target: Object) -> Variant:
+func _resolve_binding_value(expr_str: String, signal_target: Node) -> Variant:
 	if not (expr_str.begins_with("{") and expr_str.ends_with("}")):
 		return null
 
@@ -291,7 +291,7 @@ func _resolve_binding_value(expr_str: String, signal_target: Object) -> Variant:
 
 
 # Loop builder: <for count="..." var="idx">
-func _build_for(parser: XMLParser, signal_target: Object, var_context: Dictionary, buffer: PackedByteArray, _parsed_files: Array) -> Control:
+func _build_for(parser: XMLParser, signal_target: Node, var_context: Dictionary, buffer: PackedByteArray, _parsed_files: Array) -> Control:
 	var container = VBoxContainer.new()
 	container.name = "ForLoop"
 
@@ -299,20 +299,34 @@ func _build_for(parser: XMLParser, signal_target: Object, var_context: Dictionar
 	var count_val = 0
 	var idx_name  = "index"
 	var bindings = []
+	var count_binding_info = null
 
 	for j in range(parser.get_attribute_count()):
 		var an = parser.get_attribute_name(j)
 		var av = parser.get_attribute_value(j)
 		
-		var val = _interpolate(av, var_context)
+		var val = _interpolate(av, var_context, signal_target)
 
 		if an == "count":
 			if val.begins_with("{") and val.ends_with("}"):
+				var expr := val.substr(1, val.length() - 2)
+				var parts := expr.split(":")
+				var src_prop_pair := parts[0]
+				var dot_idx := src_prop_pair.find(".")
+				var src_id := src_prop_pair if dot_idx == -1 else src_prop_pair.substr(0, dot_idx)
+				var src_prop := "ui_value" if dot_idx == -1 else src_prop_pair.substr(dot_idx + 1)
+
+				# Resolve initial value
 				var resolved_val = _resolve_binding_value(val, signal_target)
 				if resolved_val != null:
 					count_val = int(resolved_val)
 				else:
-					logger.warning("[GodArkup] Could not resolve binding for 'count': %s" % val)
+					logger.warning("[GodArkup] Could not resolve initial binding for 'count': %s" % val)
+
+				# Only set up dynamic binding if a signal is explicitly provided
+				if parts.size() == 2:
+					var sig_name := parts[1]
+					count_binding_info = {"source_id": src_id, "source_prop": src_prop, "signal": sig_name}
 			else:
 				count_val = int(_parse_value(val))
 		elif an == "var":
@@ -335,8 +349,49 @@ func _build_for(parser: XMLParser, signal_target: Object, var_context: Dictionar
 			# This makes the template-gathering non-recursive.
 			parser.skip_section()
 
-	# 3) Now, replay the template for each loop iteration.
-	for i in range(count_val):
+	# 3) Initial build of children
+	_rebuild_for_children(container, count_val, template_offsets, signal_target, var_context, buffer, _parsed_files, idx_name)
+
+	# 4) Set up dynamic binding for count, if applicable
+	if count_binding_info:
+		var target_id = count_binding_info.source_id
+		var target_prop_name = count_binding_info.source_prop
+		var sig_name = count_binding_info.signal
+
+		var target_object: Object = null
+		match target_id:
+			"owner":
+				target_object = signal_target
+			"self":
+				target_object = container # 'self' refers to the for loop container itself
+			_:
+				var scene_root = signal_target.get_tree().get_current_scene()
+				if not scene_root:
+					logger.warning("[GodArkup] Cannot resolve 'for' count target '%s', could not find scene root." % target_id)
+					return container
+				target_object = _find_by_external_id(scene_root, external_id_property, target_id)
+
+		if not target_object:
+			var expression: String = count_binding_info.source_id + "." + count_binding_info.source_prop + ":" + count_binding_info.signal
+			logger.warning("[GodArkup] 'for' count target object '%s' not found for expression '%s'. Dynamic update will not work." % [target_id, expression])
+			return container
+
+		if target_object.has_signal(sig_name):
+			var count_update_callable = Callable(self, "_on_for_loop_count_changed").bind(container, template_offsets, signal_target, var_context, buffer, _parsed_files, idx_name)
+			if not target_object.is_connected(sig_name, count_update_callable):
+				target_object.connect(sig_name, count_update_callable)
+		else:
+			logger.warning("[GodArkup] No signal '%s' found for property '%s' on object '%s'. 'for' loop dynamic update will not work." % [sig_name, target_prop_name, target_id])
+
+	return container
+
+func _rebuild_for_children(for_container: Control, new_count: int, template_offsets: Array, signal_target: Node, var_context: Dictionary, buffer: PackedByteArray, parsed_files: Array, idx_name: String) -> void:
+	# Clear existing children
+	for child in for_container.get_children():
+		child.queue_free()
+
+	# Replay the template for each loop iteration.
+	for i in range(new_count):
 		var local_ctx = var_context.duplicate()
 		local_ctx[idx_name] = i
 
@@ -345,19 +400,18 @@ func _build_for(parser: XMLParser, signal_target: Object, var_context: Dictionar
 			subparser.open_buffer(buffer)
 			subparser.seek(offset) # This moves to the offset AND reads the node there.
 			
-			# We are now positioned on the node we want to build.
-			# DO NOT call read() again here, as that would skip the node.
 			if subparser.get_node_type() == XMLParser.NODE_ELEMENT:
-				var child = _build_node(subparser, signal_target, local_ctx, buffer, _parsed_files)
+				var child = _build_node(subparser, signal_target, local_ctx, buffer, parsed_files)
 				if child:
-					container.add_child(child)
+					for_container.add_child(child)
 
-	return container
+func _on_for_loop_count_changed(new_count_from_signal: int, for_container: Control, template_offsets: Array, signal_target: Node, var_context: Dictionary, buffer: PackedByteArray, parsed_files: Array, idx_name: String) -> void:
+	_rebuild_for_children(for_container, new_count_from_signal, template_offsets, signal_target, var_context, buffer, parsed_files, idx_name)
 
 
 
 # Original node creation logic
-func _build_standard_node(parser: XMLParser, signal_target: Object, var_context: Dictionary, buffer: PackedByteArray, _parsed_files: Array) -> Control:
+func _build_standard_node(parser: XMLParser, signal_target: Node, var_context: Dictionary, buffer: PackedByteArray, _parsed_files: Array) -> Control:
 	var tag := parser.get_node_name()
 	var node := ClassDB.instantiate(tag)
 	if node == null:
@@ -396,40 +450,43 @@ func _build_standard_node(parser: XMLParser, signal_target: Object, var_context:
 					break
 	return node
 
-func _interpolate(text: String, var_context: Dictionary) -> String:
+func _interpolate(text: String, var_context: Dictionary, signal_target: Node) -> String:
 	# Combine resolved component properties with local loop variables.
 	# Loop variables take precedence over component properties in case of a name collision.
 	var full_context = resolved_properties.duplicate()
 	full_context.merge(var_context, true)
 	full_context.merge(resource_map, false)
 
-	if full_context.is_empty() or text.find("#{") == -1:
-		return text
+	if signal_target:
+		full_context["owner"] = signal_target
 
 	var result := text
 	var regex := RegEx.new()
-	regex.compile("#\\{(.+?)\\}")
+	regex.compile("#\\{(.+?)\\}") # Only compile for #{...}
 
 	for m in regex.search_all(text):
 		var code = m.get_string(1).strip_edges()
-		var expr := Expression.new()
+		var resolved_val = null
 
+		var expr := Expression.new()
 		var var_names := []
 		var var_values := []
 		for key in full_context:
 			var_names.append(str(key))
 			var_values.append(full_context[key])
 
-		if expr.parse(code, var_names) != OK:
-			if not Engine.is_editor_hint():
-				logger.warning("[GodArkup] Couldn't parse expression '%s'. Error: %s" % [code, expr.get_error_text()])
-			continue
-			
-		var val = expr.execute(var_values)
-		if expr.has_execute_failed():
-			logger.error("[GodArkup] Expression execution failed for: '%s'. Error: %s" % [code, expr.get_error_text()])
+		if expr.parse(code, var_names) == OK:
+			resolved_val = expr.execute(var_values)
+			if expr.has_execute_failed():
+				logger.error("[GodArkup] Interpolation: Expression execution failed for: '%s'. Error: %s" % [code, expr.get_error_text()])
+		else:
+			logger.warning("[GodArkup] Interpolation: Couldn't parse expression '%s'. Error: %s" % [code, expr.get_error_text()])
 
-		result = result.replace(m.get_string(0), str(val))
+		if resolved_val != null:
+			result = result.replace(m.get_string(0), str(resolved_val))
+		else:
+			result = result.replace(m.get_string(0), "ERROR_RESOLVING_INTERPOLATION")
+
 	return result
 
 
@@ -529,13 +586,13 @@ func _create_fake_parser(data: Dictionary) -> XMLParser:
 
 
 
-func _process_attr(node: Object, name: String, raw_val: String, signal_target: Object, var_ctx: Dictionary, bindings: Array):
+func _process_attr(node: Node, name: String, raw_val: String, signal_target: Node, var_ctx: Dictionary, bindings: Array):
 	var processed_val = raw_val
 	if processed_val.find("#{") != -1:
-		processed_val = _interpolate(processed_val, var_ctx)
+		processed_val = _interpolate(processed_val, var_ctx, signal_target)
 
 	if processed_val.begins_with("{") and processed_val.ends_with("}"):
-		var expr := processed_val.substr(1, processed_val.length() - 2)
+		var expr: String = processed_val.substr(1, processed_val.length() - 2)
 		var parts := expr.split(":")
 		if parts.size() == 2 or parts.size() == 1:
 			var src_prop_pair := parts[0]
@@ -567,7 +624,7 @@ func _process_attr(node: Object, name: String, raw_val: String, signal_target: O
 
 
 
-func _wire_event(node: Object, attr_name: String, handler_str: String, signal_target: Object) -> void:
+func _wire_event(node: Node, attr_name: String, handler_str: String, signal_target: Node) -> void:
 	# attr_name looks like "on_pressed"
 	var sig := attr_name.substr(3)
 	if not node.has_signal(sig):
