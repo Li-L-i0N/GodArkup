@@ -1,5 +1,7 @@
 **GodArkup — Declarative UI Markup for Godot**
 
+![GodArkup Icon](godarkup-icon.png)
+
 A Godot EditorPlugin that enables UI scene creation via a lightweight XML‑based markup language. Define your UI structure, resource references, data bindings, and dynamic loops in a single `.godarkup` file; then generate a `.tscn` scene or preview it instantly from the Godot Editor.
 
 ---
@@ -19,9 +21,10 @@ A Godot EditorPlugin that enables UI scene creation via a lightweight XML‑base
 
 ## Installation
 
-1. Copy the `addons/godarkup/` folder into your project’s `res://addons/` directory.
-2. In Godot’s **Project Settings ▶️ Plugins**, enable **GodArkup**.
-3. Ensure `.godarkup` files are visible in the FileSystem dock (added automatically).
+1. **Download the plugin:** Obtain the plugin from its release page or by cloning the repository.
+2. **Copy to your project:** Extract the `addons/godarkup/` folder (from the downloaded ZIP or repository) directly into your Godot project's `res://addons/` directory.
+3. **Enable the plugin:** In Godot, go to **Project -> Project Settings -> Plugins**, and enable **GodArkup**.
+4. **Verify file recognition:** `.godarkup` files should now be recognized and visible in the FileSystem dock (this is handled automatically by the plugin).
 
 ## Syntax Overview
 
