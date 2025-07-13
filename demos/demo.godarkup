@@ -5,5 +5,5 @@
 
 <VBoxContainer>
   <TextureRect texture="icon"/>
-  <Button theme="app_theme" text="Click" on_pressed="handle_click"/>
+  <Button theme="app_theme" text="Click" on_pressed="test_scene.handle_click"/>
 </VBoxContainer>

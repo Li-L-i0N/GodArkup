@@ -54,7 +54,7 @@ func _enter_tree() -> void:
 	add_tool_menu_item("Generate UI Scene", Callable(self, "_on_generate_button_pressed"))
 	
 	# Instantiate preview dock from script, not a missing .tscn
-	var PreviewScript := preload("res://addons/godarkup/scripts/markup_ui_preview.gd")
+	var PreviewScript := preload("res://addons/godarkup/scripts/plugin/markup_ui_preview.gd")
 	preview_dock = PreviewScript.new()
 	add_control_to_bottom_panel(preview_dock, "UI Markup Preview")
 	

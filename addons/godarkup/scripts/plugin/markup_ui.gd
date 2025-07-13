@@ -15,11 +15,8 @@ var logger: Logger
 
 func _init():
 	if Engine.is_editor_hint():
-		# In editor, the singleton might not be reliable.
-		# We create a local logger instance to avoid issues.
 		logger = Logger.new()
 	else:
-		# In-game, we use the singleton to aggregate logs.
 		logger = Logger.get_instance()
 
 
@@ -321,7 +318,8 @@ func _build_for(parser: XMLParser, signal_target: Node, var_context: Dictionary,
 				if resolved_val != null:
 					count_val = int(resolved_val)
 				else:
-					logger.warning("[GodArkup] Could not resolve initial binding for 'count': %s" % val)
+					if not Engine.is_editor_hint():
+						logger.warning("[GodArkup] Could not resolve initial binding for 'count': %s" % val)
 
 				# Only set up dynamic binding if a signal is explicitly provided
 				if parts.size() == 2:
@@ -367,7 +365,8 @@ func _build_for(parser: XMLParser, signal_target: Node, var_context: Dictionary,
 			_:
 				var scene_root = signal_target.get_tree().get_current_scene()
 				if not scene_root:
-					logger.warning("[GodArkup] Cannot resolve 'for' count target '%s', could not find scene root." % target_id)
+					if not Engine.is_editor_hint():
+						logger.warning("[GodArkup] Cannot resolve 'for' count target '%s', could not find scene root." % target_id)
 					return container
 				target_object = _find_by_external_id(scene_root, external_id_property, target_id)
 

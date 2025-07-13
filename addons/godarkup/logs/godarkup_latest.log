@@ -1,2 +1,25 @@
-[2025-07-12 00:00:51] [INFO] Starting GodArkup processing for: res://addons/godarkup/demos/demo_inventory.godarkup
-[2025-07-12 00:00:51] [INFO] Successfully built UI from res://addons/godarkup/demos/demo_inventory.godarkup
+[2025-07-14 01:34:47] [INFO] Starting GodArkup processing for: res://demos/demo_for.godarkup
+[2025-07-14 01:34:47] [INFO] Parsing resources...
+[2025-07-14 01:34:47] [INFO] Loaded resource 'slot_icon' from 'res://assets/inventory_slot.png'
+[2025-07-14 01:34:47] [INFO] Finished parsing resources.
+[2025-07-14 01:34:47] [INFO] Successfully built UI from res://demos/demo_for.godarkup
+[2025-07-14 01:36:11] [INFO] Starting GodArkup processing for: res://demos/demo_inventory.godarkup
+[2025-07-14 01:36:11] [WARNING] [GodArkup] Could not resolve initial binding for 'count': {player_inv.inventory_size:inventory_size_changed}
+[2025-07-14 01:36:11] [WARNING] [GodArkup] Cannot resolve 'for' count target 'player_inv', could not find scene root.
+[2025-07-14 01:36:11] [INFO] Successfully built UI from res://demos/demo_inventory.godarkup
+[2025-07-14 01:36:20] [INFO] Starting GodArkup processing for: res://demos/demo_inventory.godarkup
+[2025-07-14 01:36:20] [WARNING] [GodArkup] Could not resolve initial binding for 'count': {player_inv.inventory_size:inventory_size_changed}
+[2025-07-14 01:36:20] [WARNING] [GodArkup] Cannot resolve 'for' count target 'player_inv', could not find scene root.
+[2025-07-14 01:36:20] [INFO] Successfully built UI from res://demos/demo_inventory.godarkup
+[2025-07-14 01:38:08] [INFO] Starting GodArkup processing for: res://demos/demo_inventory.godarkup
+[2025-07-14 01:38:08] [WARNING] [GodArkup] Cannot resolve 'for' count target 'player_inv', could not find scene root.
+[2025-07-14 01:38:08] [INFO] Successfully built UI from res://demos/demo_inventory.godarkup
+[2025-07-14 01:38:38] [INFO] Starting GodArkup processing for: res://demos/demo_inventory.godarkup
+[2025-07-14 01:38:38] [INFO] Successfully built UI from res://demos/demo_inventory.godarkup
+[2025-07-14 01:50:51] [INFO] Starting GodArkup processing for: res://demos/demo2.godarkup
+[2025-07-14 01:50:51] [INFO] Parsing resources...
+[2025-07-14 01:50:51] [INFO] Loaded resource 'icon' from 'res://assets/icon.svg'
+[2025-07-14 01:50:51] [INFO] Loaded resource 'app_theme' from 'res://assets/theme.tres'
+[2025-07-14 01:50:51] [INFO] Loaded resource 'custom_font' from 'res://assets/font.tres'
+[2025-07-14 01:50:51] [INFO] Finished parsing resources.
+[2025-07-14 01:50:51] [INFO] Successfully built UI from res://demos/demo2.godarkup

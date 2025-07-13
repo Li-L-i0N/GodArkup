@@ -16,8 +16,8 @@ A Godot EditorPlugin that enables UI scene creation via a lightweight XML‑base
   - `{object_id.property:signal_name}` — automatic updates of the UI property when `signal_name` is emitted by `object_id`.
 - **Dynamic For Loops**: Create lists of UI elements that automatically update when their `count` binding changes.
 - **Event Handling**: Wire UI events to script callbacks using `on_<signal>="object_id.method_name"`.
-- **Preview panel**: Live preview your markup directly within the Editor’s bottom dock.
-- **Scene generation**: Generate `.tscn` files with ownership and packing handled for you.
+- **Preview panel**: Live preview your markup directly within the Editor’s **bottom dock**.
+- **Scene generation**: To generate a `.tscn` scene from a `.godarkup` file, select the file in the FileSystem dock and go to **Tools -> Generate UI Scene**.
 
 ## Installation
 
@@ -54,6 +54,9 @@ A Godot EditorPlugin that enables UI scene creation via a lightweight XML‑base
 
 Used to display dynamic values within text or other properties. The expression is evaluated once when the UI is built. If the expression contains a binding (`{...}`), its initial value will be used, and a reactive binding will be set up.
 
+**Limitations:**
+- Nested interpolation is not supported (e.g., `#{#{...}}` will not work).
+
 - `#{variable_name}`: Interpolates a variable from the current context (e.g., loop variable).
 - `#{object_id.property}`: Interpolates a property from a game object found by its external ID.
 
@@ -69,6 +72,9 @@ Example:
 
 Used to bind a UI property directly to a game object's property, with optional reactive updates.
 
+**Limitations:**
+- Bindings must be the *only* content of an attribute's value (e.g., `text="{player.name}"` is supported, but `text="Player: {player.name}"` is not).
+
 - `{object_id.property}`: Initializes the UI property with the value of `object_id.property`.
 - `{object_id.property:signal_name}`: Initializes the UI property and updates it automatically when `signal_name` is emitted by `object_id`.
 
@@ -76,17 +82,20 @@ Example:
 
 ```xml
 <ProgressBar
-    min="0"
-    max_value="{player.max_health}"
-    value="{player.health:health_changed}"
-    theme="app_theme"
-    custom_minimum_size="60;0"
-    size_flags_vertical="3" />
+	min="0"
+	max_value="{player.max_health}"
+	value="{player.health:health_changed}"
+	theme="app_theme"
+	custom_minimum_size="60;0"
+	size_flags_vertical="3" />
 ```
 
 ### Dynamic For Loops (`<for>`)
 
 Creates a list of UI elements based on a `count`. The loop can dynamically update its children when the `count` binding changes.
+
+**Limitations:**
+- Children of `<for>` loops are not previewed in the Godot editor; they will only appear at runtime.
 
 - `count="{number}"`: Static count.
 - `count="{object_id.property}"`: Initial count from property.
@@ -97,11 +106,11 @@ Example:
 
 ```xml
 <VBoxContainer name="InventorySlots">
-    <for count="{player_inv.inventory_size:inventory_size_changed}" var="i">
-        <PanelContainer custom_minimum_size="0;50">
-            <Label text="Slot #{i + 1}" align="1" valign="1" />
-        </PanelContainer>
-    </for>
+	<for count="{player_inv.inventory_size:inventory_size_changed}" var="i">
+		<PanelContainer custom_minimum_size="0;50">
+			<Label text="Slot #{i + 1}" align="1" valign="1" />
+		</PanelContainer>
+	</for>
 </VBoxContainer>
 ```
 
@@ -122,17 +131,17 @@ Use `on_<signal>="object_id.method_name"` to wire UI events to script callbacks.
 <VBoxContainer>
   <Label text="Inventory Size: #{player_inv.inventory_size:inventory_size_changed}" />
   <HBoxContainer>
-    <Button text="Add Item" on_pressed="player_inv.add_item" />
-    <Button text="Remove Item" on_pressed="player_inv.remove_item" />
+	<Button text="Add Item" on_pressed="player_inv.add_item" />
+	<Button text="Remove Item" on_pressed="player_inv.remove_item" />
   </HBoxContainer>
   <ScrollContainer size_flags_vertical="3">
-    <VBoxContainer name="InventorySlots">
-      <for count="{player_inv.inventory_size:inventory_size_changed}" var="i">
-        <PanelContainer custom_minimum_size="0;50">
-          <Label text="Slot #{i + 1}" align="1" valign="1" />
-        </PanelContainer>
-      </for>
-    </VBoxContainer>
+	<VBoxContainer name="InventorySlots">
+	  <for count="{player_inv.inventory_size:inventory_size_changed}" var="i">
+		<PanelContainer custom_minimum_size="0;50">
+		  <Label text="Slot #{i + 1}" align="1" valign="1" />
+		</PanelContainer>
+	  </for>
+	</VBoxContainer>
   </ScrollContainer>
 </VBoxContainer>
 ```
@@ -142,10 +151,9 @@ Use `on_<signal>="object_id.method_name"` to wire UI events to script callbacks.
 1. **Edit** your `.godarkup` file in the FileSystem dock.
 2. **Select** the file and click **Tools ▶️ Generate UI Scene**.
 3. A new `.tscn` will be created alongside the `.godarkup` file.
-4. **Preview** live: open the **UI Markup Preview** panel at the bottom.
+4. **Preview** live: open the **UI Markup Preview** panel at the bottom. To update the preview after making changes to the `.godarkup` file, **double-click the file in the FileSystem dock** (even if it's already open in the script editor).
 
 
 ## License
 
 MIT License. See [LICENSE](LICENSE) for details.
-

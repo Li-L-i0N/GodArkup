@@ -1,0 +1,13 @@
+<VBoxContainer>
+	<Label text="Recursive Markup Demo" horizontal_alignment="1" />
+	<Panel custom_minimum_size="0;10" />
+
+	<Label text="These buttons are loaded from another markup file:" />
+	
+	<HBoxContainer>
+		<Node path="res://demos/components/sub_button.godarkup" text="First Button" />
+		<Node path="res://demos/components/sub_button.godarkup" text="Second Button" />
+		<Node path="res://demos/components/sub_button.godarkup" text="Third One" />
+	</HBoxContainer>
+	
+</VBoxContainer>

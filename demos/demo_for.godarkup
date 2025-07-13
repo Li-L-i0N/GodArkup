@@ -18,7 +18,7 @@
   <for count="{player1.max_slots}" var="i">
  	<Label text="#{i}" custom_minimum_size="0;12" />
 	<Node
-	  path="res://addons/godarkup/scenes/InventorySlot.tscn"
+	  path="res://demos/scenes/InventorySlot.tscn"
 	  index="#{i}"                         <!-- pure binding -->
 	  icon="slot_icon"                    <!-- resource id -->
 	  label_text="Slot #{i + 1}" />       <!-- interpolation -->

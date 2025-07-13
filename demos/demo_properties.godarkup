@@ -3,10 +3,10 @@
 	<Panel custom_minimum_size="0;10" />
 
 	<Label text="Card with default properties:" />
-	<Node path="res://addons/godarkup/components/PlayerCard.godarkup"/>
+	<Node path="res://demos/components/PlayerCard.godarkup"/>
 
 	<Label text="Card with overridden properties:" />
-	<Node path="res://addons/godarkup/components/PlayerCard.godarkup"
+	<Node path="res://demos/components/PlayerCard.godarkup"
 		  player_name="Static Gemini"
 		  player_icon="res://assets/icon.svg"
 		  is_active="true"
@@ -15,7 +15,7 @@
 
 	<Label text="Cards generated in a loop:" />
 	<for count="2" var="i">
-		<Node path="res://addons/godarkup/components/PlayerCard.godarkup"
+		<Node path="res://demos/components/PlayerCard.godarkup"
 			  player_name="Player #{i + 1}"
 			  is_active="#{i == 0}"
 			  health_value_binding="{player#{i+1}.health:health_changed}"

@@ -10,8 +10,8 @@
 	<HBoxContainer>
 	  <TextureRect texture="icon" stretch_mode="2" />
 	  <VBoxContainer>
-		<Button text="Accept" on_pressed="owner.handle_accept" />
-		<Button text="Cancel" on_pressed="owner.handle_cancel" />
+		<Button text="Accept" on_pressed="test_scene.handle_accept" />
+		<Button text="Cancel" on_pressed="test_scene.handle_cancel" />
 	  </VBoxContainer>
 	</HBoxContainer>
 	<LineEdit text="Type here..." />
