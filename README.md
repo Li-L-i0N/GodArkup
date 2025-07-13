@@ -156,4 +156,4 @@ Use `on_<signal>="object_id.method_name"` to wire UI events to script callbacks.
 
 ## License
 
-MIT License. See [LICENSE](LICENSE) for details.
+MIT License. See [LICENSE](LICENSE.md) for details.
