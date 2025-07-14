@@ -31,13 +31,13 @@ A Godot EditorPlugin that enables UI scene creation via a lightweight XML‑base
 ### Root Structure
 
 ```xml
-<Resources> … </Resources>
 <Properties> … </Properties>
+<Resources> … </Resources>
 <RootNode …> … </RootNode>
 ```
 
-- `<Resources>`: Declare asset `id` and `path` pairs.
 - `<Properties>`: Define properties that can be passed to nested GodArkup components.
+- `<Resources>`: Declare asset `id` and `path` pairs.
 - **UI Elements**: Any Godot `Node` type as XML tags. Attributes map to properties or signal‐handlers.
 
 ### Resource Block
@@ -57,15 +57,12 @@ Used to display dynamic values within text or other properties. The expression i
 **Limitations:**
 - Nested interpolation is not supported (e.g., `#{#{...}}` will not work).
 
-- `#{variable_name}`: Interpolates a variable from the current context (e.g., loop variable).
-- `#{object_id.property}`: Interpolates a property from a game object found by its external ID.
+- `#{variable_name}`: Interpolates a variable from the current context or godot expression (currently loop variable).
 
 Example:
 
 ```xml
-<Label text="Player Name: #{player_data.name}" />
 <Label text="Current Slot: #{i + 1}" /> <!-- 'i' from a <for> loop -->
-<Label text="Health: #{player.health:health_changed}" /> <!-- Displays initial health, updates on signal -->
 ```
 
 ### Reactive Data Binding (`{...}`)
@@ -81,6 +78,14 @@ Used to bind a UI property directly to a game object's property, with optional r
 Example:
 
 ```xml
+<Label text="Player Name: " />
+<Label text="#{player_data.name}" />
+
+
+<Label text="Health: " />
+<Label text="#{player.health:health_changed}" /> <!-- Displays initial health, updates on signal -->
+
+
 <ProgressBar
 	min="0"
 	max_value="{player.max_health}"
@@ -96,6 +101,7 @@ Creates a list of UI elements based on a `count`. The loop can dynamically updat
 
 **Limitations:**
 - Children of `<for>` loops are not previewed in the Godot editor; they will only appear at runtime.
+- Currently, `<for>` is by default a VBoxContainer.
 
 - `count="{number}"`: Static count.
 - `count="{object_id.property}"`: Initial count from property.
@@ -105,13 +111,13 @@ Creates a list of UI elements based on a `count`. The loop can dynamically updat
 Example:
 
 ```xml
-<VBoxContainer name="InventorySlots">
+<PanelContainer name="InventorySlots">
 	<for count="{player_inv.inventory_size:inventory_size_changed}" var="i">
 		<PanelContainer custom_minimum_size="0;50">
 			<Label text="Slot #{i + 1}" align="1" valign="1" />
 		</PanelContainer>
 	</for>
-</VBoxContainer>
+</PanelContainer>
 ```
 
 ### Event Handling
@@ -122,7 +128,7 @@ Use `on_<signal>="object_id.method_name"` to wire UI events to script callbacks.
 <Button text="Click Me" on_pressed="player.open_menu" />
 ```
 
-## 📂 Example Markup
+## Example Markup
 
 ```xml
 <Resources>
@@ -152,6 +158,12 @@ Use `on_<signal>="object_id.method_name"` to wire UI events to script callbacks.
 2. **Select** the file and click **Tools ▶️ Generate UI Scene**.
 3. A new `.tscn` will be created alongside the `.godarkup` file.
 4. **Preview** live: open the **UI Markup Preview** panel at the bottom. To update the preview after making changes to the `.godarkup` file, **double-click the file in the FileSystem dock** (even if it's already open in the script editor).
+
+OR
+
+1. **Edit** your `.godarkup` file.
+2. **Call** `load_markup(path, self)` from a `GodArkup.new()` instance.
+3. **Add** the returned node to the scene tree.
 
 
 ## License
